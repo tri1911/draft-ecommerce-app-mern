@@ -1,2 +1,4 @@
 node_modules
+.env
 learning-notes.txt
+requests

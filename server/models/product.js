@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slug = require('mongoose-slug-generator');
+const uniqueValidator = require('mongoose-unique-validator');
 const { Schema } = mongoose;
 
 const options = {
@@ -14,6 +15,7 @@ mongoose.plugin(slug, options);
 const productSchema = new Schema({
   sku: {
     type: String,
+    unique: true,
   },
   name: {
     type: String,
@@ -58,5 +60,7 @@ const productSchema = new Schema({
     default: Date.now,
   },
 });
+
+userSchema.plugin(uniqueValidator);
 
 module.exports = mongoose.model('Product', productSchema);
