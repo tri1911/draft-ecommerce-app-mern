@@ -88,9 +88,9 @@ exports.merchantApplicationEmail = () => {
 
 exports.orderConfirmationEmail = (order) => {
   const message = {
-    subject: `Order Confirmation ${order._id}`,
+    subject: `Order Confirmation ${order.id}`,
     text:
-      `Hi ${order.user.profile.firstName}! Thank you for your order!. \n\n` +
+      `Hi ${order.user.firstName}! Thank you for your order!. \n\n` +
       `We've received your order and will contact you as soon as your package is shipped. \n\n`,
   };
 

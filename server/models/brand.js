@@ -15,6 +15,7 @@ const brandSchema = new Schema({
   name: {
     type: String,
     trim: true,
+    required: true,
   },
   slug: {
     type: String,
@@ -28,6 +29,7 @@ const brandSchema = new Schema({
   description: {
     type: String,
     trim: true,
+    required: true,
   },
   isActive: {
     type: Boolean,

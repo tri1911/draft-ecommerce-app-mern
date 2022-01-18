@@ -1,17 +1,22 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const uniqueValidator = require('mongoose-unique-validator');
 
 // merchant schema definition
 const merchantSchema = new Schema({
   name: {
     type: String,
     trim: true,
+    required: true,
   },
   email: {
     type: String,
+    required: true,
+    unique: true,
   },
   phone: {
     type: String,
+    required: true,
   },
   brand: {
     type: String,
@@ -19,6 +24,7 @@ const merchantSchema = new Schema({
   business: {
     type: String,
     trim: true,
+    required: true,
   },
   isActive: {
     type: Boolean,
@@ -35,5 +41,7 @@ const merchantSchema = new Schema({
     default: Date.now,
   },
 });
+
+userSchema.plugin(uniqueValidator);
 
 module.exports = mongoose.model('Merchant', merchantSchema);

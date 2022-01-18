@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slug = require('mongoose-slug-generator');
+const uniqueValidator = require('mongoose-unique-validator');
 const { Schema } = mongoose;
 
 const options = {
@@ -15,6 +16,7 @@ const categorySchema = new Schema({
   name: {
     type: String,
     trim: true,
+    required: true,
   },
   slug: {
     type: String,
@@ -28,6 +30,7 @@ const categorySchema = new Schema({
   description: {
     type: String,
     trim: true,
+    required: true,
   },
   isActive: {
     type: Boolean,
@@ -45,5 +48,7 @@ const categorySchema = new Schema({
     default: Date.now,
   },
 });
+
+userSchema.plugin(uniqueValidator);
 
 module.exports = mongoose.model('Category', categorySchema);
