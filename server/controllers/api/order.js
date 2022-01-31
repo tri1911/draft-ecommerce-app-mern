@@ -92,7 +92,9 @@ router.get('/', jwtAuth, async (request, response) => {
 });
 
 // fetch order info by id
-router.get('/:orderId', jwtAuth, async (request, response) => {});
+router.get('/:orderId', jwtAuth, async (request, response) => {
+    
+});
 
 // remove order by id
 router.delete('/cancel/:orderId', jwtAuth, async (request, response) => {});
