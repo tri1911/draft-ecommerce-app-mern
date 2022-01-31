@@ -9,8 +9,7 @@ const multer = require('multer');
 const {S3} = require('../../libs/aws');
 const {s3access, s3bucketConfig} = require('../../config/s3');
 
-const Product = require('../../models/product');
-const Category = require('../../models/category');
+const { model: Product, helpers } = require('../../models/product');
 const Brand = require('../../models/brand');
 const extractToken = require('../../utils/tokenExtractor');
 const passport = require('passport');
@@ -60,7 +59,7 @@ router.get('/list/search/:name', async (request, response) => {
 // fetch products in store by advanced filters
 router.post('/list', async (request, response) => {
   // extract filter values from request body - including sort, rating, price range, category and page number
-  let {
+  const {
     sortOrder,
     rating = 0,
     minPrice,
@@ -68,141 +67,17 @@ router.post('/list', async (request, response) => {
     category,
     pageNumber: page = 1,
   } = request.body;
-  // generate filter objects which will be used in query object
-  const pageSize = 8; // each page presents only 8 items
-  const priceFilter =
-    minPrice && maxPrice ? { $gte: minPrice, $lte: maxPrice } : {};
-  const ratingFilter = { $gte: rating };
-  // generate the basic query that outer join with `brands` and `reviews` collections
-  //    left join with `brands` collection as `brands` array field
-  //    filter only active brand
-  //    left join with `reviews` collection as `reviews` array field
-  //    from review documents, add fields total ratings, total reviews, and average rating
-  //    filter only active products & within `price range` + `average rating range`
-  //    excludes brands and reviews array fields
-  const basicQuery = [
-    {
-      $lookup: {
-        from: 'brands',
-        localField: 'brand',
-        foreignField: '_id',
-        as: 'brands',
-      },
-    },
-    {
-      $unwind: {
-        path: '$brands',
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $addFields: {
-        'brand.name': '$brands.name',
-        'brand.id': '$brands._id',
-        'brand.isActive': '$brands.isActive',
-      },
-    },
-    {
-      $match: {
-        'brand.isActive': true,
-      },
-    },
-    {
-      $lookup: {
-        from: 'reviews',
-        localField: '_id',
-        foreignField: 'product',
-        as: 'reviews',
-      },
-    },
-    {
-      $addFields: {
-        totalRatings: { $sum: 'reviews.rating' },
-        totalReviews: { $size: 'reviews' },
-      },
-    },
-    {
-      $addFields: {
-        averageRating: {
-          $cond: [
-            { $eq: ['$totalReviews', 0] },
-            0,
-            { $divide: ['$totalRatings', '$totalReviews'] },
-          ],
-        },
-      },
-    },
-    {
-      $match: {
-        isActive: true,
-        price: priceFilter,
-        averageRating: ratingFilter,
-      },
-    },
-    {
-      $project: {
-        brands: 0,
-        reviews: 0,
-      },
-    },
-  ];
-  // if category filter is selected, filter products within that category only
-  if (category) {
-    const catDoc = await Category.findOne(
-      { slug: category, isActive: true },
-      'products -id'
-    );
-    if (!catDoc) {
-      basicQuery.push({
-        $match: {
-          _id: {
-            $in: Array.from(catDoc.products),
-          },
-        },
-      });
-    }
-  }
-  // if there exists logged-in user
-  //    look up `reviews` collection to add field `isLiked` to products
-  const user = await extractToken(request);
-  if (user) {
-    basicQuery = [
-      {
-        $lookup: {
-          from: 'wishlists',
-          let: { product: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $and: [
-                  { $expr: { $eq: ['$$product', '$product'] } },
-                  { user: new mongoose.Types.ObjectId(user.id) },
-                ],
-              },
-            },
-          ],
-          as: 'wishlists',
-        },
-      },
-      {
-        $addFields: { isLiked: { $arrayElemAt: ['$wishlists.isLiked', 0] } },
-      },
-      ...basicQuery,
-    ];
-  }
-  // fetch products with basic query
-  const allProducts = await Product.aggregate(basicQuery);
-  // generate `paginate query` including sort order, skip, limit
-  const paginateQuery = [
-    { $sort: sortOrder },
-    { $skip: pageSize * (allProducts.length > 8 ? page - 1 : 0) },
-    { $limit: pageSize },
-  ];
-  // fetch filtered products to present to current page with `basic query + paginate query`
-  const filteredProducts = await Product.aggregate([
-    ...basicQuery,
-    ...paginateQuery,
-  ]);
+
+  const filteredProducts = await helpers.listWithFilterAndPaging({
+    sortOrder, 
+    rating, 
+    minPrice, 
+    maxPrice, 
+    category, 
+    page: pageNumber, 
+  });
+
+
   // respond to client - products, current page index, pages count, total products count
   response.status(200).json({
     products: filteredProducts,
