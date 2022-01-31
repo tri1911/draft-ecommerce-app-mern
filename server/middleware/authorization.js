@@ -24,3 +24,4 @@ const authorize =
   };
 
 module.exports = { ROLES, authorize };
+
