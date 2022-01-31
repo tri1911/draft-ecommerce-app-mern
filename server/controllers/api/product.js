@@ -6,7 +6,8 @@ const { ApplicationError } = require('../../utils/customErrors');
 const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
-const AWS = require('aws-sdk');
+const {S3} = require('../../libs/aws');
+const {s3access, s3bucketConfig} = require('../../config/s3');
 
 const Product = require('../../models/product');
 const Category = require('../../models/category');
@@ -317,14 +318,10 @@ router.post(
     const image = request.file;
     // TODO: update the newest way to upload file to S3
     if (image) {
-      const s3bucket = new AWS.S3({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_REGION,
-      });
+      const s3bucket = new S3(s3access);
 
       const params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
+        ...s3bucketConfig,
         Key: image.originalname,
         Body: image.buffer,
         contentType: image.mimetype,
